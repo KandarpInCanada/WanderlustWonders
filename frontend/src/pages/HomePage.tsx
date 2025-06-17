@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search } from "lucide-react"
+import { Link } from "react-router-dom"
 
 // Smooth color interpolation function
 const interpolateColor = (color1: number[], color2: number[], factor: number): string => {
@@ -854,15 +854,14 @@ export default function HomePage() {
               Discover amazing destinations, travel tips, and inspiring stories from fellow adventurers around the globe
             </p>
             <div className="relative max-w-2xl mx-auto">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Search className="h-6 w-6 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search destinations, stories..."
-                className="w-full pl-12 pr-4 py-4 text-lg bg-white/95 backdrop-blur-sm border-0 rounded-2xl shadow-xl focus:outline-none focus:ring-4 focus:ring-white/30 transition-all duration-300"
-              />
-            </div>
+                  <Link to="/all-blogs">
+                    <button
+                      className="w-full px-6 py-4 text-lg bg-white/95 backdrop-blur-sm border-0 rounded-2xl shadow-xl hover:bg-white/80 focus:outline-none focus:ring-4 focus:ring-white/30 transition-all duration-300"
+                    >
+                      Explore Now
+                    </button>
+                  </Link>
+                </div>
           </div>
         </div>
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce z-20">

@@ -1,9 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
-import Navbar from "./components/Navbar"
 import HomePage from "./pages/HomePage"
-import CreatePostPage from "./pages/CreatePostPage"
 import BlogPostPage from "./pages/BlogPostPage"
 import "./index.css"
+import AllPostPage from "./pages/AllPostPage"
 
 function App() {
   return (
@@ -11,7 +10,7 @@ function App() {
       <div className="min-h-screen bg-gray-50">
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/create" element={<CreatePostPage />} />
+          <Route path="/all-blogs" element={<AllPostPage />} />
           <Route path="/blog/:id" element={<BlogPostPage />} />
         </Routes>
       </div>
