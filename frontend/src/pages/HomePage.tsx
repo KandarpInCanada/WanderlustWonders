@@ -790,7 +790,7 @@ export default function HomePage() {
                 <button
                   className="w-full px-6 py-4 text-lg bg-white/95 backdrop-blur-sm border-0 rounded-2xl shadow-xl hover:bg-white/80 focus:outline-none focus:ring-4 focus:ring-white/30 transition-all duration-300"
                 >
-                  Explore Now
+                  Explore
                 </button>
               </Link>
             </div>

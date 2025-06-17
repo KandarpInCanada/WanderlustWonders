@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { ArrowLeft, Upload, Eye, Save, Send, MapPin, Calendar, Users, Tag, Camera, Globe, Compass } from "lucide-react"
+import Navbar from "../components/Navbar"
 
 const categories = [
   { value: "adventure", label: "🏔️ Adventure", color: "bg-orange-100 text-orange-800" },
@@ -99,6 +100,7 @@ export default function CreatePostPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <Navbar/>
       {/* Animated Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-10 left-10 w-20 h-20 bg-blue-200 rounded-full opacity-20 animate-pulse"></div>
@@ -111,16 +113,7 @@ export default function CreatePostPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8 pt-8">
           <div className="flex items-center">
-            <button className="inline-flex items-center text-gray-600 hover:text-gray-900 mr-6 transition-all duration-300 group bg-white/80 backdrop-blur-lg rounded-full px-4 py-2 shadow-lg hover:shadow-xl border border-white/50">
-              <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
-              Back to Stories
-            </button>
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <Compass className="w-8 h-8 text-blue-600" />
-                <Globe className="w-8 h-8 text-green-600" />
-                <Camera className="w-8 h-8 text-purple-600" />
-              </div>
               <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent">
                 Share Your Adventure
               </h1>
