@@ -807,32 +807,6 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-
-          {/* Enhanced Floating Elements */}
-          <div className="absolute inset-0 overflow-hidden" style={{ zIndex: 1 }}>
-            {[...Array(8)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute rounded-full transition-all duration-1000"
-                style={{
-                  left: `${10 + ((i * 15) % 80)}%`,
-                  top: `${30 + Math.sin(scrollY * 0.005 + i) * 20}%`,
-                  width: `${8 + (i % 3) * 4}px`,
-                  height: `${8 + (i % 3) * 4}px`,
-                  backgroundColor:
-                    dayNightProgress > 0.5
-                      ? `rgba(255, 255, 100, ${0.3 + (i % 3) * 0.2})`
-                      : `rgba(255, 255, 255, ${0.1 + (i % 3) * 0.1})`,
-                  boxShadow: dayNightProgress > 0.5 ? `0 0 ${10 + (i % 3) * 5}px rgba(255, 255, 100, 0.4)` : "none",
-                  animationDelay: `${i * 0.5}s`,
-                  animationDuration: `${3 + (i % 3)}s`,
-                  animationName: "float",
-                  animationIterationCount: "infinite",
-                  animationTimingFunction: "ease-in-out",
-                }}
-              />
-            ))}
-          </div>
         </div>
 
         {/* Hero Section */}

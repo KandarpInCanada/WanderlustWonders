@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Search, Filter, Heart, MessageCircle, Share2, Calendar, MapPin, Clock, User, Plus, Compass, Globe, Camera } from "lucide-react"
-
+import Navbar from "./../components/Navbar"
 const categories = [
   { value: "all", label: "All Stories", color: "bg-gray-100 text-gray-800" },
   { value: "adventure", label: "🏔️ Adventure", color: "bg-orange-100 text-orange-800" },
@@ -193,6 +193,7 @@ export default function TravelBlogListing() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <Navbar/>
       {/* Animated Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-10 left-10 w-20 h-20 bg-blue-200 rounded-full opacity-20 animate-pulse"></div>

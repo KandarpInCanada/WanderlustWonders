@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
 import HomePage from "./pages/HomePage"
-import BlogPostPage from "./pages/BlogPostPage"
+import CreatePostPage from "./pages/CreatePostPage"
 import "./index.css"
 import AllPostPage from "./pages/AllPostPage"
 
@@ -11,7 +11,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/all-blogs" element={<AllPostPage />} />
-          <Route path="/blog/:id" element={<BlogPostPage />} />
+          <Route path="/create-post" element={<CreatePostPage />} />
         </Routes>
       </div>
     </Router>
