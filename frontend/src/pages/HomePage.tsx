@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Link } from "react-router-dom"
 
 // Smooth color interpolation function
@@ -14,101 +14,191 @@ const easeInOutCubic = (t: number): number => {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 }
 
-const easeOutQuart = (t: number): number => {
-  return 1 - Math.pow(1 - t, 4)
+// Throttle function for scroll events
+const throttle = (func: Function, limit: number) => {
+  let inThrottle: boolean
+  return function(this: any, ...args: any[]) {
+    if (!inThrottle) {
+      func.apply(this, args)
+      inThrottle = true
+      setTimeout(() => inThrottle = false, limit)
+    }
+  }
 }
 
 export default function HomePage() {
   const [scrollY, setScrollY] = useState(0)
 
-  // Scroll tracking effect
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY)
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+  // Throttled scroll handler for better performance
+  const handleScroll = useCallback(
+    throttle(() => setScrollY(window.scrollY), 16), // ~60fps
+    []
+  )
 
-  // Scroll to top on mount (page reload or navigation)
+  // Scroll tracking effect with throttling
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [handleScroll])
+
+  // Scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [])
 
-  // Enhanced day/night transition with smoother progression
-  const maxScroll = 3000
-  const rawProgress = Math.min(scrollY / maxScroll, 1)
-  const dayNightProgress = easeInOutCubic(rawProgress)
+  // Memoized calculations to prevent recalculation on every render
+  const scrollCalculations = useMemo(() => {
+    const maxScroll = 3000
+    const rawProgress = Math.min(scrollY / maxScroll, 1)
+    const dayNightProgress = easeInOutCubic(rawProgress)
 
-  // Define color stops for smooth transitions
-  const skyColors = {
-    dawn: [135, 206, 250], // Light blue
-    morning: [87, 160, 211], // Sky blue
-    noon: [70, 130, 180], // Steel blue
-    afternoon: [255, 165, 0], // Orange
-    sunset: [255, 69, 0], // Red orange
-    dusk: [75, 0, 130], // Indigo
-    night: [25, 25, 112], // Midnight blue
-    deepNight: [0, 0, 0], // Black
-  }
-
-  // Calculate current sky color based on progress
-  const getSkyColor = (): string => {
-    if (dayNightProgress < 0.15) {
-      const factor = dayNightProgress / 0.15
-      return interpolateColor(skyColors.dawn, skyColors.morning, factor)
-    } else if (dayNightProgress < 0.3) {
-      const factor = (dayNightProgress - 0.15) / 0.15
-      return interpolateColor(skyColors.morning, skyColors.noon, factor)
-    } else if (dayNightProgress < 0.5) {
-      const factor = (dayNightProgress - 0.3) / 0.2
-      return interpolateColor(skyColors.noon, skyColors.afternoon, factor)
-    } else if (dayNightProgress < 0.65) {
-      const factor = (dayNightProgress - 0.5) / 0.15
-      return interpolateColor(skyColors.afternoon, skyColors.sunset, factor)
-    } else if (dayNightProgress < 0.8) {
-      const factor = (dayNightProgress - 0.65) / 0.15
-      return interpolateColor(skyColors.sunset, skyColors.dusk, factor)
-    } else if (dayNightProgress < 0.9) {
-      const factor = (dayNightProgress - 0.8) / 0.1
-      return interpolateColor(skyColors.dusk, skyColors.night, factor)
-    } else {
-      const factor = (dayNightProgress - 0.9) / 0.1
-      return interpolateColor(skyColors.night, skyColors.deepNight, factor)
+    // Define color stops for smooth transitions
+    const skyColors = {
+      dawn: [135, 206, 250],
+      morning: [87, 160, 211],
+      noon: [70, 130, 180],
+      afternoon: [255, 165, 0],
+      sunset: [255, 69, 0],
+      dusk: [75, 0, 130],
+      night: [25, 25, 112],
+      deepNight: [0, 0, 0],
     }
-  }
 
-  // Enhanced sun positioning with realistic arc
-  const sunProgress = Math.min(dayNightProgress * 1.4, 1)
-  const sunAngle = sunProgress * Math.PI // Full semicircle
-  const sunPosition = {
-    x: 15 + (Math.cos(Math.PI - sunAngle) + 1) * 35, // Moves from east to west
-    y: 25 + Math.sin(sunAngle) * -15, // Arc from horizon to zenith to horizon
-    opacity: Math.max(0, Math.cos(sunAngle * 0.7)), // Fades as it sets
-    size: 120 + Math.sin(sunAngle) * 40, // Larger at horizon (perspective effect)
-  }
+    // Calculate current sky color based on progress
+    const getSkyColor = (): string => {
+      if (dayNightProgress < 0.15) {
+        const factor = dayNightProgress / 0.15
+        return interpolateColor(skyColors.dawn, skyColors.morning, factor)
+      } else if (dayNightProgress < 0.3) {
+        const factor = (dayNightProgress - 0.15) / 0.15
+        return interpolateColor(skyColors.morning, skyColors.noon, factor)
+      } else if (dayNightProgress < 0.5) {
+        const factor = (dayNightProgress - 0.3) / 0.2
+        return interpolateColor(skyColors.noon, skyColors.afternoon, factor)
+      } else if (dayNightProgress < 0.65) {
+        const factor = (dayNightProgress - 0.5) / 0.15
+        return interpolateColor(skyColors.afternoon, skyColors.sunset, factor)
+      } else if (dayNightProgress < 0.8) {
+        const factor = (dayNightProgress - 0.65) / 0.15
+        return interpolateColor(skyColors.sunset, skyColors.dusk, factor)
+      } else if (dayNightProgress < 0.9) {
+        const factor = (dayNightProgress - 0.8) / 0.1
+        return interpolateColor(skyColors.dusk, skyColors.night, factor)
+      } else {
+        const factor = (dayNightProgress - 0.9) / 0.1
+        return interpolateColor(skyColors.night, skyColors.deepNight, factor)
+      }
+    }
 
-  // Enhanced moon positioning - appears after sunset
-  const moonStartProgress = 0.6
-  const moonProgress = Math.max(0, (dayNightProgress - moonStartProgress) / (1 - moonStartProgress))
-  const moonAngle = moonProgress * Math.PI * 0.8 // Slightly different arc
-  const moonPosition = {
-    x: 85 - (Math.cos(Math.PI - moonAngle) + 1) * 35, // Opposite direction
-    y: 20 + Math.sin(moonAngle) * -12,
-    opacity: Math.min(0.9, moonProgress * 2), // Fades in gradually
-    size: 100 + Math.sin(moonAngle) * 20,
-  }
+    // Sun positioning
+    const sunProgress = Math.min(dayNightProgress * 1.4, 1)
+    const sunAngle = sunProgress * Math.PI
+    const sunPosition = {
+      x: 15 + (Math.cos(Math.PI - sunAngle) + 1) * 35,
+      y: 25 + Math.sin(sunAngle) * -15,
+      opacity: Math.max(0, Math.cos(sunAngle * 0.7)),
+      size: 120 + Math.sin(sunAngle) * 40,
+    }
 
-  // Enhanced cloud movement
-  const cloud1 = {
-    x: ((scrollY * 0.015 + Date.now() * 0.0005) % 130) - 30,
-    opacity: Math.max(0.1, 0.4 - dayNightProgress * 0.3),
-    scale: 1 + Math.sin(scrollY * 0.002) * 0.1,
-  }
+    // Moon positioning
+    const moonStartProgress = 0.6
+    const moonProgress = Math.max(0, (dayNightProgress - moonStartProgress) / (1 - moonStartProgress))
+    const moonAngle = moonProgress * Math.PI * 0.8
+    const moonPosition = {
+      x: 85 - (Math.cos(Math.PI - moonAngle) + 1) * 35,
+      y: 20 + Math.sin(moonAngle) * -12,
+      opacity: Math.min(0.9, moonProgress * 2),
+      size: 100 + Math.sin(moonAngle) * 20,
+    }
 
-  const cloud2 = {
-    x: ((scrollY * 0.012 + Date.now() * 0.0004) % 140) - 40,
-    opacity: Math.max(0.05, 0.3 - dayNightProgress * 0.25),
-    scale: 1 + Math.sin(scrollY * 0.0015 + 1) * 0.08,
-  }
+    // Cloud positioning
+    const now = Date.now()
+    const cloud1 = {
+      x: ((scrollY * 0.015 + now * 0.0005) % 130) - 30,
+      opacity: Math.max(0.1, 0.4 - dayNightProgress * 0.3),
+      scale: 1 + Math.sin(scrollY * 0.002) * 0.1,
+    }
+
+    const cloud2 = {
+      x: ((scrollY * 0.012 + now * 0.0004) % 140) - 40,
+      opacity: Math.max(0.05, 0.3 - dayNightProgress * 0.25),
+      scale: 1 + Math.sin(scrollY * 0.0015 + 1) * 0.08,
+    }
+
+    return {
+      dayNightProgress,
+      skyColor: getSkyColor(),
+      sunPosition,
+      moonPosition,
+      cloud1,
+      cloud2,
+      scrollY
+    }
+  }, [scrollY])
+
+  // Memoized window generation with more windows
+  const cityWindows = useMemo(() => {
+    const windows: Array<{
+      x: number
+      y: number
+      width: number
+      height: number
+      isLit: boolean
+      color: string
+      layer: string
+    }> = []
+
+    // Stylized buildings with increased window count
+    const buildings = [
+      // Background buildings
+      { x: 50, y: 100, width: 40, height: 500, layer: 'back', windowCount: 20 },
+      { x: 100, y: 80, width: 50, height: 520, layer: 'back', windowCount: 24 },
+      { x: 160, y: 120, width: 30, height: 480, layer: 'back', windowCount: 16 },
+      { x: 200, y: 60, width: 60, height: 540, layer: 'back', windowCount: 28 },
+      { x: 270, y: 90, width: 45, height: 510, layer: 'back', windowCount: 22 },
+      { x: 325, y: 75, width: 55, height: 525, layer: 'back', windowCount: 26 },
+      
+      // Mid buildings
+      { x: 80, y: 220, width: 40, height: 380, layer: 'mid', windowCount: 14 },
+      { x: 130, y: 200, width: 45, height: 400, layer: 'mid', windowCount: 16 },
+      { x: 185, y: 210, width: 50, height: 390, layer: 'mid', windowCount: 18 },
+      { x: 245, y: 220, width: 55, height: 380, layer: 'mid', windowCount: 20 },
+      { x: 310, y: 230, width: 45, height: 370, layer: 'mid', windowCount: 16 },
+      { x: 365, y: 240, width: 50, height: 360, layer: 'mid', windowCount: 18 },
+      
+      // Front buildings
+      { x: 90, y: 380, width: 40, height: 220, layer: 'front', windowCount: 10 },
+      { x: 140, y: 390, width: 60, height: 210, layer: 'front', windowCount: 14 },
+      { x: 210, y: 370, width: 55, height: 230, layer: 'front', windowCount: 12 },
+      { x: 275, y: 380, width: 50, height: 220, layer: 'front', windowCount: 12 },
+      { x: 335, y: 390, width: 45, height: 210, layer: 'front', windowCount: 10 },
+      { x: 390, y: 370, width: 60, height: 230, layer: 'front', windowCount: 14 },
+    ]
+
+    buildings.forEach(building => {
+      const windowsPerRow = Math.max(2, Math.floor(building.width / 20))
+      const rows = Math.max(2, Math.floor(building.windowCount / windowsPerRow))
+      
+      for (let i = 0; i < building.windowCount; i++) {
+        const row = Math.floor(i / windowsPerRow)
+        const col = i % windowsPerRow
+        
+        windows.push({
+          x: building.x + 5 + col * (building.width - 10) / (windowsPerRow - 1 || 1),
+          y: building.y + 15 + row * (building.height - 30) / (rows - 1 || 1),
+          width: building.layer === 'front' ? 6 : building.layer === 'mid' ? 5 : 4,
+          height: building.layer === 'front' ? 8 : building.layer === 'mid' ? 7 : 6,
+          isLit: Math.random() > (building.layer === 'front' ? 0.3 : building.layer === 'mid' ? 0.4 : 0.5),
+          color: `rgba(255, 255, 255, ${0.8 + Math.random() * 0.2})`,
+          layer: building.layer
+        })
+      }
+    })
+
+    return windows
+  }, [])
+
+  const { dayNightProgress, skyColor, sunPosition, moonPosition, cloud1, cloud2 } = scrollCalculations
 
   return (
     <div className="relative overflow-x-hidden">
@@ -118,9 +208,9 @@ export default function HomePage() {
         <div className="fixed inset-0 z-0">
           {/* Dynamic Sky with Smooth Gradient */}
           <div
-            className="absolute inset-0 transition-all duration-1000 ease-out"
+            className="absolute inset-0 will-change-transform"
             style={{
-              background: `linear-gradient(to bottom, ${getSkyColor()}, ${interpolateColor(
+              background: `linear-gradient(to bottom, ${skyColor}, ${interpolateColor(
                 [135, 206, 250],
                 [25, 25, 112],
                 dayNightProgress,
@@ -131,11 +221,11 @@ export default function HomePage() {
           {/* Enhanced Clouds with Better Movement */}
           <div className="absolute inset-0 overflow-hidden" style={{ zIndex: 1 }}>
             <div
-              className="absolute top-16 transition-all duration-1000 ease-out"
+              className="absolute top-16 will-change-transform"
               style={{
                 left: `${cloud1.x}%`,
                 opacity: cloud1.opacity,
-                transform: `scale(${cloud1.scale})`,
+                transform: `scale(${cloud1.scale}) translateZ(0)`,
               }}
             >
               <svg width="300" height="100" viewBox="0 0 300 100" className="fill-white drop-shadow-sm">
@@ -146,11 +236,11 @@ export default function HomePage() {
               </svg>
             </div>
             <div
-              className="absolute top-28 transition-all duration-1000 ease-out"
+              className="absolute top-28 will-change-transform"
               style={{
                 left: `${cloud2.x}%`,
                 opacity: cloud2.opacity,
-                transform: `scale(${cloud2.scale})`,
+                transform: `scale(${cloud2.scale}) translateZ(0)`,
               }}
             >
               <svg width="250" height="80" viewBox="0 0 250 80" className="fill-white drop-shadow-sm">
@@ -162,15 +252,15 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Enhanced Stars with Star Shape */}
+          {/* Enhanced Stars */}
           <div
-            className="absolute inset-0 transition-opacity duration-1000"
+            className="absolute inset-0"
             style={{ opacity: Math.max(0, (dayNightProgress - 0.4) * 1.5) }}
           >
-            {[...Array(20)].map((_, i) => (
+            {[...Array(15)].map((_, i) => (
               <div
                 key={i}
-                className="absolute transition-all duration-1000"
+                className="absolute"
                 style={{
                   left: `${10 + ((i * 37) % 80)}%`,
                   top: `${15 + ((i * 23) % 40)}%`,
@@ -193,45 +283,21 @@ export default function HomePage() {
 
           {/* Enhanced Sun with Realistic Lighting */}
           <div
-            className="absolute transition-all duration-700 ease-out"
+            className="absolute will-change-transform"
             style={{
               left: `${sunPosition.x}%`,
               top: `${sunPosition.y}%`,
               opacity: sunPosition.opacity,
-              transform: "translate(-50%, -50%)",
+              transform: "translate(-50%, -50%) translateZ(0)",
               zIndex: 3,
             }}
           >
-            {/* Sun's Glow */}
-            <div
-              className="absolute inset-0 rounded-full"
-              style={{
-                width: `${sunPosition.size * 3}px`,
-                height: `${sunPosition.size * 3}px`,
-                background: `radial-gradient(circle, rgba(255, 255, 0, ${sunPosition.opacity * 0.1}) 0%, rgba(255, 200, 0, ${sunPosition.opacity * 0.05}) 30%, transparent 70%)`,
-                transform: "translate(-50%, -50%)",
-                left: "50%",
-                top: "50%",
-              }}
-            />
-            <div
-              className="absolute inset-0 rounded-full"
-              style={{
-                width: `${sunPosition.size * 2}px`,
-                height: `${sunPosition.size * 2}px`,
-                background: `radial-gradient(circle, rgba(255, 255, 100, ${sunPosition.opacity * 0.2}) 0%, rgba(255, 220, 0, ${sunPosition.opacity * 0.1}) 50%, transparent 80%)`,
-                transform: "translate(-50%, -50%)",
-                left: "50%",
-                top: "50%",
-              }}
-            />
-            {/* Sun Body */}
             <div
               className="relative bg-gradient-to-br from-yellow-300 to-orange-400 rounded-full shadow-lg"
               style={{
                 width: `${sunPosition.size}px`,
                 height: `${sunPosition.size}px`,
-                boxShadow: `0 0 ${sunPosition.size * 0.3}px rgba(255, 255, 0, ${sunPosition.opacity * 0.8}), 0 0 ${sunPosition.size * 0.6}px rgba(255, 200, 0, ${sunPosition.opacity * 0.4})`,
+                boxShadow: `0 0 ${sunPosition.size * 0.3}px rgba(255, 255, 0, ${sunPosition.opacity * 0.8})`,
               }}
             >
               <div className="absolute top-4 left-6 w-4 h-4 bg-yellow-200 rounded-full opacity-60" />
@@ -240,64 +306,37 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Enhanced Moon with Realistic Phases */}
+          {/* Enhanced Moon */}
           <div
-            className="absolute transition-all duration-700 ease-out"
+            className="absolute will-change-transform"
             style={{
               left: `${moonPosition.x}%`,
               top: `${moonPosition.y}%`,
               opacity: moonPosition.opacity,
-              transform: "translate(-50%, -50%)",
+              transform: "translate(-50%, -50%) translateZ(0)",
               zIndex: 3,
             }}
           >
-            {/* Moon's Glow */}
-            <div
-              className="absolute inset-0 rounded-full"
-              style={{
-                width: `${moonPosition.size * 2.5}px`,
-                height: `${moonPosition.size * 2.5}px`,
-                background: `radial-gradient(circle, rgba(200, 200, 255, ${moonPosition.opacity * 0.08}) 0%, rgba(150, 150, 255, ${moonPosition.opacity * 0.04}) 40%, transparent 70%)`,
-                transform: "translate(-50%, -50%)",
-                left: "50%",
-                top: "50%",
-              }}
-            />
-            <div
-              className="absolute inset-0 rounded-full"
-              style={{
-                width: `${moonPosition.size * 1.8}px`,
-                height: `${moonPosition.size * 1.8}px`,
-                background: `radial-gradient(circle, rgba(220, 220, 255, ${moonPosition.opacity * 0.15}) 0%, rgba(180, 180, 255, ${moonPosition.opacity * 0.08}) 50%, transparent 80%)`,
-                transform: "translate(-50%, -50%)",
-                left: "50%",
-                top: "50%",
-              }}
-            />
-            {/* Moon Body */}
             <div
               className="relative bg-gradient-to-br from-gray-100 to-gray-300 rounded-full shadow-lg"
               style={{
                 width: `${moonPosition.size}px`,
                 height: `${moonPosition.size}px`,
-                boxShadow: `0 0 ${moonPosition.size * 0.25}px rgba(200, 200, 255, ${moonPosition.opacity * 0.6}), 0 0 ${moonPosition.size * 0.5}px rgba(150, 150, 255, ${moonPosition.opacity * 0.3})`,
+                boxShadow: `0 0 ${moonPosition.size * 0.25}px rgba(200, 200, 255, ${moonPosition.opacity * 0.6})`,
               }}
             >
-              {/* Moon Craters */}
               <div className="absolute top-4 left-4 w-3 h-3 bg-gray-400 rounded-full opacity-60" />
               <div className="absolute top-8 right-4 w-4 h-4 bg-gray-400 rounded-full opacity-40" />
               <div className="absolute bottom-6 left-6 w-2 h-2 bg-gray-400 rounded-full opacity-50" />
-              <div className="absolute top-12 left-10 w-2 h-2 bg-gray-400 rounded-full opacity-70" />
-              <div className="absolute bottom-4 right-6 w-3 h-3 bg-gray-400 rounded-full opacity-30" />
             </div>
           </div>
 
-          {/* Enhanced Parallax Mountain Layers with Better Depth */}
+          {/* Parallax Mountain Layers */}
           <div className="absolute inset-0">
             {/* Back Mountains */}
             <div
-              className="absolute bottom-0 w-full h-full opacity-40"
-              style={{ transform: `translateY(${scrollY * 0.6}px)` }}
+              className="absolute bottom-0 w-full h-full opacity-40 will-change-transform"
+              style={{ transform: `translateY(${scrollY * 0.6}px) translateZ(0)` }}
             >
               <svg viewBox="0 0 1200 600" className="w-full h-full" preserveAspectRatio="none">
                 <defs>
@@ -315,8 +354,8 @@ export default function HomePage() {
 
             {/* Mid Mountains */}
             <div
-              className="absolute bottom-0 w-full h-full opacity-60"
-              style={{ transform: `translateY(${scrollY * 0.4}px)` }}
+              className="absolute bottom-0 w-full h-full opacity-60 will-change-transform"
+              style={{ transform: `translateY(${scrollY * 0.4}px) translateZ(0)` }}
             >
               <svg viewBox="0 0 1200 600" className="w-full h-full" preserveAspectRatio="none">
                 <defs>
@@ -334,8 +373,8 @@ export default function HomePage() {
 
             {/* Front Mountains */}
             <div
-              className="absolute bottom-0 w-full h-full opacity-80"
-              style={{ transform: `translateY(${scrollY * 0.2}px)` }}
+              className="absolute bottom-0 w-full h-full opacity-80 will-change-transform"
+              style={{ transform: `translateY(${scrollY * 0.2}px) translateZ(0)` }}
             >
               <svg viewBox="0 0 1200 600" className="w-full h-full" preserveAspectRatio="none">
                 <defs>
@@ -352,416 +391,69 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Night Cityscape - Square Buildings with Proper Window Placement */}
+          {/* Stylized City Skyline */}
           <div
-            className="absolute bottom-0 w-full h-full transition-opacity duration-1000"
+            className="absolute bottom-0 w-full h-full will-change-transform"
             style={{
               opacity: Math.max(0, (dayNightProgress - 0.4) * 1.5),
-              transform: `translateY(${scrollY * 0.1}px)`,
+              transform: `translateY(${scrollY * 0.1}px) translateZ(0)`,
               zIndex: 4,
             }}
           >
-            {/* City Skyline with Square Buildings */}
             <div className="absolute bottom-0 w-full h-full">
               <svg viewBox="0 0 1200 600" className="w-full h-full" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="cityBuilding" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor={interpolateColor([30, 41, 59], [15, 23, 42], dayNightProgress)} />
-                    <stop offset="100%" stopColor={interpolateColor([15, 23, 42], [8, 14, 28], dayNightProgress)} />
+                    <stop offset="0%" stopColor="#1E1E2F" />
+                    <stop offset="100%" stopColor="#0F0F1C" />
                   </linearGradient>
                 </defs>
 
-                {/* Background Layer - Tallest Buildings */}
-                <rect x="50" y="100" width="60" height="500" fill="url(#cityBuilding)" opacity="0.6" />
-                <rect x="130" y="80" width="70" height="520" fill="url(#cityBuilding)" opacity="0.6" />
-                <rect x="220" y="120" width="50" height="480" fill="url(#cityBuilding)" opacity="0.6" />
-                <rect x="290" y="60" width="80" height="540" fill="url(#cityBuilding)" opacity="0.6" />
-                <rect x="390" y="90" width="65" height="510" fill="url(#cityBuilding)" opacity="0.6" />
-                <rect x="480" y="110" width="55" height="490" fill="url(#cityBuilding)" opacity="0.6" />
-                <rect x="560" y="70" width="75" height="530" fill="url(#cityBuilding)" opacity="0.6" />
-                <rect x="660" y="100" width="60" height="500" fill="url(#cityBuilding)" opacity="0.6" />
-                <rect x="740" y="85" width="70" height="515" fill="url(#cityBuilding)" opacity="0.6" />
-                <rect x="830" y="95" width="65" height="505" fill="url(#cityBuilding)" opacity="0.6" />
-                <rect x="920" y="75" width="80" height="525" fill="url(#cityBuilding)" opacity="0.6" />
-                <rect x="1020" y="105" width="55" height="495" fill="url(#cityBuilding)" opacity="0.6" />
-                <rect x="1100" y="90" width="70" height="510" fill="url(#cityBuilding)" opacity="0.6" />
+                {/* Background Buildings */}
+                <rect x="50" y="100" width="40" height="500" fill="url(#cityBuilding)" />
+                <rect x="100" y="80" width="50" height="520" fill="url(#cityBuilding)" />
+                <rect x="160" y="120" width="30" height="480" fill="url(#cityBuilding)" />
+                <rect x="200" y="60" width="60" height="540" fill="url(#cityBuilding)" />
+                <rect x="270" y="90" width="45" height="510" fill="url(#cityBuilding)" />
+                <rect x="325" y="75" width="55" height="525" fill="url(#cityBuilding)" />
 
-                {/* Mid Layer - Medium Buildings */}
-                <rect x="20" y="250" width="45" height="350" fill="url(#cityBuilding)" opacity="0.8" />
-                <rect x="80" y="220" width="55" height="380" fill="url(#cityBuilding)" opacity="0.8" />
-                <rect x="150" y="240" width="50" height="360" fill="url(#cityBuilding)" opacity="0.8" />
-                <rect x="220" y="200" width="60" height="400" fill="url(#cityBuilding)" opacity="0.8" />
-                <rect x="300" y="230" width="45" height="370" fill="url(#cityBuilding)" opacity="0.8" />
-                <rect x="370" y="210" width="65" height="390" fill="url(#cityBuilding)" opacity="0.8" />
-                <rect x="460" y="240" width="50" height="360" fill="url(#cityBuilding)" opacity="0.8" />
-                <rect x="530" y="220" width="70" height="380" fill="url(#cityBuilding)" opacity="0.8" />
-                <rect x="620" y="200" width="55" height="400" fill="url(#cityBuilding)" opacity="0.8" />
-                <rect x="700" y="230" width="60" height="370" fill="url(#cityBuilding)" opacity="0.8" />
-                <rect x="780" y="210" width="50" height="390" fill="url(#cityBuilding)" opacity="0.8" />
-                <rect x="850" y="240" width="65" height="360" fill="url(#cityBuilding)" opacity="0.8" />
-                <rect x="940" y="220" width="55" height="380" fill="url(#cityBuilding)" opacity="0.8" />
-                <rect x="1020" y="200" width="70" height="400" fill="url(#cityBuilding)" opacity="0.8" />
-                <rect x="1110" y="230" width="50" height="370" fill="url(#cityBuilding)" opacity="0.8" />
+                {/* Mid Buildings */}
+                <rect x="80" y="220" width="40" height="380" fill="url(#cityBuilding)" />
+                <rect x="130" y="200" width="45" height="400" fill="url(#cityBuilding)" />
+                <rect x="185" y="210" width="50" height="390" fill="url(#cityBuilding)" />
+                <rect x="245" y="220" width="55" height="380" fill="url(#cityBuilding)" />
+                <rect x="310" y="230" width="45" height="370" fill="url(#cityBuilding)" />
+                <rect x="365" y="240" width="50" height="360" fill="url(#cityBuilding)" />
 
-                {/* Foreground Layer - Shorter Buildings */}
-                <rect x="0" y="400" width="70" height="200" fill="url(#cityBuilding)" />
-                <rect x="90" y="380" width="60" height="220" fill="url(#cityBuilding)" />
-                <rect x="170" y="420" width="50" height="180" fill="url(#cityBuilding)" />
-                <rect x="240" y="390" width="80" height="210" fill="url(#cityBuilding)" />
-                <rect x="340" y="410" width="55" height="190" fill="url(#cityBuilding)" />
-                <rect x="420" y="370" width="75" height="230" fill="url(#cityBuilding)" />
-                <rect x="520" y="400" width="60" height="200" fill="url(#cityBuilding)" />
-                <rect x="600" y="380" width="70" height="220" fill="url(#cityBuilding)" />
-                <rect x="690" y="420" width="50" height="180" fill="url(#cityBuilding)" />
-                <rect x="760" y="390" width="65" height="210" fill="url(#cityBuilding)" />
-                <rect x="850" y="410" width="55" height="190" fill="url(#cityBuilding)" />
-                <rect x="930" y="370" width="80" height="230" fill="url(#cityBuilding)" />
-                <rect x="1030" y="400" width="60" height="200" fill="url(#cityBuilding)" />
-                <rect x="1110" y="380" width="90" height="220" fill="url(#cityBuilding)" />
-
-                {/* Special Buildings */}
-                {/* Antenna Building */}
-                <rect x="290" y="60" width="80" height="540" fill="url(#cityBuilding)" opacity="0.6" />
-                <rect x="325" y="40" width="10" height="20" fill="url(#cityBuilding)" />
-                <circle cx="330" cy="35" r="3" fill="url(#cityBuilding)" />
+                {/* Front Buildings */}
+                <rect x="90" y="380" width="40" height="220" fill="url(#cityBuilding)" />
+                <rect x="140" y="390" width="60" height="210" fill="url(#cityBuilding)" />
+                <rect x="210" y="370" width="55" height="230" fill="url(#cityBuilding)" />
+                <rect x="275" y="380" width= "50" height="220" fill="url(#cityBuilding)" />
+                <rect x="335" y="390" width="45" height="210" fill="url(#cityBuilding)" />
+                <rect x="390" y="370" width="60" height="230" fill="url(#cityBuilding)" />
               </svg>
 
-              {/* Lit Windows - Precisely Placed Within Buildings */}
+              {/* Optimized Windows */}
               <div className="absolute bottom-0 w-full h-full">
-                {/* Background Layer Windows */}
-                {[
-                  // Building 1: x=50, y=100, width=60, height=500
-                  ...Array.from({ length: 24 }, (_, i) => ({
-                    buildingX: 50,
-                    buildingY: 100,
-                    buildingWidth: 60,
-                    buildingHeight: 500,
-                    windowX: 50 + 8 + (i % 4) * 12,
-                    windowY: 100 + 20 + Math.floor(i / 4) * 40,
-                    size: "small",
-                    layer: "back",
-                  })),
-                  // Building 2: x=130, y=80, width=70, height=520
-                  ...Array.from({ length: 28 }, (_, i) => ({
-                    buildingX: 130,
-                    buildingY: 80,
-                    buildingWidth: 70,
-                    buildingHeight: 520,
-                    windowX: 130 + 8 + (i % 4) * 14,
-                    windowY: 80 + 20 + Math.floor(i / 4) * 40,
-                    size: "small",
-                    layer: "back",
-                  })),
-                  // Building 3: x=220, y=120, width=50, height=480
-                  ...Array.from({ length: 20 }, (_, i) => ({
-                    buildingX: 220,
-                    buildingY: 120,
-                    buildingWidth: 50,
-                    buildingHeight: 480,
-                    windowX: 220 + 6 + (i % 3) * 12,
-                    windowY: 120 + 20 + Math.floor(i / 3) * 40,
-                    size: "small",
-                    layer: "back",
-                  })),
-                  // Building 4: x=290, y=60, width=80, height=540 (Antenna building)
-                  ...Array.from({ length: 32 }, (_, i) => ({
-                    buildingX: 290,
-                    buildingY: 60,
-                    buildingWidth: 80,
-                    buildingHeight: 540,
-                    windowX: 290 + 8 + (i % 5) * 14,
-                    windowY: 60 + 20 + Math.floor(i / 5) * 40,
-                    size: "small",
-                    layer: "back",
-                  })),
-                  // Building 5: x=390, y=90, width=65, height=510
-                  ...Array.from({ length: 25 }, (_, i) => ({
-                    buildingX: 390,
-                    buildingY: 90,
-                    buildingWidth: 65,
-                    buildingHeight: 510,
-                    windowX: 390 + 8 + (i % 4) * 12,
-                    windowY: 90 + 20 + Math.floor(i / 4) * 40,
-                    size: "small",
-                    layer: "back",
-                  })),
-                  // Building 6: x=480, y=110, width=55, height=490
-                  ...Array.from({ length: 21 }, (_, i) => ({
-                    buildingX: 480,
-                    buildingY: 110,
-                    buildingWidth: 55,
-                    buildingHeight: 490,
-                    windowX: 480 + 8 + (i % 3) * 13,
-                    windowY: 110 + 20 + Math.floor(i / 3) * 40,
-                    size: "small",
-                    layer: "back",
-                  })),
-                  // Building 7: x=560, y=70, width=75, height=530
-                  ...Array.from({ length: 30 }, (_, i) => ({
-                    buildingX: 560,
-                    buildingY: 70,
-                    buildingWidth: 75,
-                    buildingHeight: 530,
-                    windowX: 560 + 8 + (i % 5) * 12,
-                    windowY: 70 + 20 + Math.floor(i / 5) * 40,
-                    size: "small",
-                    layer: "back",
-                  })),
-                  // Building 8: x=660, y=100, width=60, height=500
-                  ...Array.from({ length: 24 }, (_, i) => ({
-                    buildingX: 660,
-                    buildingY: 100,
-                    buildingWidth: 60,
-                    buildingHeight: 500,
-                    windowX: 660 + 8 + (i % 4) * 12,
-                    windowY: 100 + 20 + Math.floor(i / 4) * 40,
-                    size: "small",
-                    layer: "back",
-                  })),
-                  // Building 9: x=740, y=85, width=70, height=515
-                  ...Array.from({ length: 28 }, (_, i) => ({
-                    buildingX: 740,
-                    buildingY: 85,
-                    buildingWidth: 70,
-                    buildingHeight: 515,
-                    windowX: 740 + 8 + (i % 4) * 14,
-                    windowY: 85 + 20 + Math.floor(i / 4) * 40,
-                    size: "small",
-                    layer: "back",
-                  })),
-                  // Building 10: x=830, y=95, width=65, height=505
-                  ...Array.from({ length: 25 }, (_, i) => ({
-                    buildingX: 830,
-                    buildingY: 95,
-                    buildingWidth: 65,
-                    buildingHeight: 505,
-                    windowX: 830 + 8 + (i % 4) * 12,
-                    windowY: 95 + 20 + Math.floor(i / 4) * 40,
-                    size: "small",
-                    layer: "back",
-                  })),
-                  // Building 11: x=920, y=75, width=80, height=525
-                  ...Array.from({ length: 32 }, (_, i) => ({
-                    buildingX: 920,
-                    buildingY: 75,
-                    buildingWidth: 80,
-                    buildingHeight: 525,
-                    windowX: 920 + 8 + (i % 5) * 14,
-                    windowY: 75 + 20 + Math.floor(i / 5) * 40,
-                    size: "small",
-                    layer: "back",
-                  })),
-                  // Building 12: x=1020, y=105, width=55, height=495
-                  ...Array.from({ length: 21 }, (_, i) => ({
-                    buildingX: 1020,
-                    buildingY: 105,
-                    buildingWidth: 55,
-                    buildingHeight: 495,
-                    windowX: 1020 + 8 + (i % 3) * 13,
-                    windowY: 105 + 20 + Math.floor(i / 3) * 40,
-                    size: "small",
-                    layer: "back",
-                  })),
-                  // Building 13: x=1100, y=90, width=70, height=510
-                  ...Array.from({ length: 28 }, (_, i) => ({
-                    buildingX: 1100,
-                    buildingY: 90,
-                    buildingWidth: 70,
-                    buildingHeight: 510,
-                    windowX: 1100 + 8 + (i % 4) * 14,
-                    windowY: 90 + 20 + Math.floor(i / 4) * 40,
-                    size: "small",
-                    layer: "back",
-                  })),
-                ].map((window, index) => {
-                  const isLit = Math.random() > 0.3 // 70% chance of being lit
-                  const windowSizes = {
-                    small: { width: 4, height: 6 },
-                    medium: { width: 6, height: 8 },
-                    large: { width: 8, height: 10 },
-                  }
-                  const size = windowSizes[window.size]
-                  const opacity = 0.6
-
-                  return isLit ? (
+                {cityWindows.map((window, index) => (
+                  window.isLit ? (
                     <div
-                      key={`back-window-${index}`}
-                      className="absolute transition-all duration-1000"
+                      key={`window-${index}`}
+                      className="absolute will-change-transform"
                       style={{
-                        left: `${(window.windowX / 1200) * 100}%`,
-                        bottom: `${((600 - window.windowY) / 600) * 100}%`,
-                        width: `${size.width}px`,
-                        height: `${size.height}px`,
-                        backgroundColor: `rgba(255, ${220 + Math.random() * 35}, ${100 + Math.random() * 155}, ${0.8 + Math.random() * 0.2})`,
-                        boxShadow: `0 0 ${size.width + 2}px rgba(255, 235, 150, ${opacity * 0.6})`,
+                        left: `${(window.x / 1200) * 100}%`,
+                        bottom: `${((600 - window.y) / 600) * 100}%`,
+                        width: `${window.width}px`,
+                        height: `${window.height}px`,
+                        backgroundColor: window.color,
                         borderRadius: "1px",
-                        opacity: dayNightProgress > 0.5 ? opacity : 0,
-                        animationDelay: `${Math.random() * 5}s`,
+                        opacity: dayNightProgress > 0.5 ? (window.layer === 'front' ? 1 : window.layer === 'mid' ? 0.8 : 0.6) : 0,
+                        boxShadow: `0 0 ${window.width}px ${window.color.replace(')', ', 0.3)')}`,
                       }}
                     />
                   ) : null
-                })}
-
-                {/* Mid Layer Windows */}
-                {[
-                  // Mid layer buildings - 15 buildings
-                  ...Array.from({ length: 12 }, (_, buildingIndex) => {
-                    const buildings = [
-                      { x: 20, y: 250, width: 45, height: 350 },
-                      { x: 80, y: 220, width: 55, height: 380 },
-                      { x: 150, y: 240, width: 50, height: 360 },
-                      { x: 220, y: 200, width: 60, height: 400 },
-                      { x: 300, y: 230, width: 45, height: 370 },
-                      { x: 370, y: 210, width: 65, height: 390 },
-                      { x: 460, y: 240, width: 50, height: 360 },
-                      { x: 530, y: 220, width: 70, height: 380 },
-                      { x: 620, y: 200, width: 55, height: 400 },
-                      { x: 700, y: 230, width: 60, height: 370 },
-                      { x: 780, y: 210, width: 50, height: 390 },
-                      { x: 850, y: 240, width: 65, height: 360 },
-                    ]
-                    const building = buildings[buildingIndex]
-                    const windowsPerRow = Math.floor(building.width / 15)
-                    const rows = Math.floor(building.height / 30)
-
-                    return Array.from({ length: windowsPerRow * rows }, (_, windowIndex) => ({
-                      buildingX: building.x,
-                      buildingY: building.y,
-                      buildingWidth: building.width,
-                      buildingHeight: building.height,
-                      windowX: building.x + 8 + (windowIndex % windowsPerRow) * 15,
-                      windowY: building.y + 15 + Math.floor(windowIndex / windowsPerRow) * 30,
-                      size: "medium",
-                      layer: "mid",
-                    }))
-                  }).flat(),
-                ].map((window, index) => {
-                  const isLit = Math.random() > 0.4 // 60% chance of being lit
-                  const windowSizes = {
-                    medium: { width: 6, height: 8 },
-                  }
-                  const size = windowSizes[window.size]
-                  const opacity = 0.8
-
-                  return isLit ? (
-                    <div
-                      key={`mid-window-${index}`}
-                      className="absolute transition-all duration-1000"
-                      style={{
-                        left: `${(window.windowX / 1200) * 100}%`,
-                        bottom: `${((600 - window.windowY) / 600) * 100}%`,
-                        width: `${size.width}px`,
-                        height: `${size.height}px`,
-                        backgroundColor: `rgba(255, ${200 + Math.random() * 55}, ${100 + Math.random() * 155}, ${0.7 + Math.random() * 0.3})`,
-                        boxShadow: `0 0 ${size.width + 2}px rgba(255, 220, 150, ${opacity * 0.5})`,
-                        borderRadius: "1px",
-                        opacity: dayNightProgress > 0.5 ? opacity : 0,
-                        animationDelay: `${Math.random() * 4}s`,
-                      }}
-                    />
-                  ) : null
-                })}
-
-                {/* Foreground Layer Windows */}
-                {[
-                  // Foreground buildings - 14 buildings
-                  ...Array.from({ length: 14 }, (_, buildingIndex) => {
-                    const buildings = [
-                      { x: 0, y: 400, width: 70, height: 200 },
-                      { x: 90, y: 380, width: 60, height: 220 },
-                      { x: 170, y: 420, width: 50, height: 180 },
-                      { x: 240, y: 390, width: 80, height: 210 },
-                      { x: 340, y: 410, width: 55, height: 190 },
-                      { x: 420, y: 370, width: 75, height: 230 },
-                      { x: 520, y: 400, width: 60, height: 200 },
-                      { x: 600, y: 380, width: 70, height: 220 },
-                      { x: 690, y: 420, width: 50, height: 180 },
-                      { x: 760, y: 390, width: 65, height: 210 },
-                      { x: 850, y: 410, width: 55, height: 190 },
-                      { x: 930, y: 370, width: 80, height: 230 },
-                      { x: 1030, y: 400, width: 60, height: 200 },
-                      { x: 1110, y: 380, width: 90, height: 220 },
-                    ]
-                    const building = buildings[buildingIndex]
-                    const windowsPerRow = Math.floor(building.width / 18)
-                    const rows = Math.floor(building.height / 35)
-
-                    return Array.from({ length: windowsPerRow * rows }, (_, windowIndex) => ({
-                      buildingX: building.x,
-                      buildingY: building.y,
-                      buildingWidth: building.width,
-                      buildingHeight: building.height,
-                      windowX: building.x + 10 + (windowIndex % windowsPerRow) * 18,
-                      windowY: building.y + 20 + Math.floor(windowIndex / windowsPerRow) * 35,
-                      size: "large",
-                      layer: "front",
-                    }))
-                  }).flat(),
-                ].map((window, index) => {
-                  const isLit = Math.random() > 0.35 // 65% chance of being lit
-                  const windowSizes = {
-                    large: { width: 8, height: 10 },
-                  }
-                  const size = windowSizes[window.size]
-                  const opacity = 1.0
-
-                  return isLit ? (
-                    <div
-                      key={`front-window-${index}`}
-                      className="absolute transition-all duration-1000"
-                      style={{
-                        left: `${(window.windowX / 1200) * 100}%`,
-                        bottom: `${((600 - window.windowY) / 600) * 100}%`,
-                        width: `${size.width}px`,
-                        height: `${size.height}px`,
-                        backgroundColor: `rgba(255, ${180 + Math.random() * 75}, ${80 + Math.random() * 175}, ${0.8 + Math.random() * 0.2})`,
-                        boxShadow: `0 0 ${size.width + 4}px rgba(255, 200, 120, ${opacity * 0.7})`,
-                        borderRadius: "2px",
-                        opacity: dayNightProgress > 0.5 ? opacity : 0,
-                        animationDelay: `${Math.random() * 2}s`,
-                      }}
-                    />
-                  ) : null
-                })}
-
-                {/* Street Level Lighting */}
-                <div className="absolute bottom-0 w-full h-16">
-                  {[...Array(20)].map((_, i) => (
-                    <div
-                      key={`street-${i}`}
-                      className="absolute bottom-0 transition-all duration-1000"
-                      style={{
-                        left: `${3 + i * 4.7}%`,
-                        opacity: dayNightProgress > 0.6 ? 1 : 0,
-                      }}
-                    >
-                      <div className="w-0.5 bg-gray-700" style={{ height: "40px" }} />
-                      <div
-                        className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1"
-                        style={{
-                          width: "30px",
-                          height: "30px",
-                          background: "radial-gradient(circle, rgba(255, 255, 150, 0.2) 0%, transparent 70%)",
-                          borderRadius: "50%",
-                        }}
-                      />
-                      <div
-                        className="absolute top-0 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full"
-                        style={{
-                          backgroundColor: "rgba(255, 255, 150, 0.9)",
-                          boxShadow: "0 0 6px rgba(255, 255, 150, 0.6)",
-                        }}
-                      />
-                    </div>
-                  ))}
-
-                  <div
-                    className="absolute bottom-0 w-full h-8 transition-opacity duration-1000"
-                    style={{
-                      background: `linear-gradient(to top, rgba(255, 235, 150, ${dayNightProgress > 0.6 ? 0.1 : 0}) 0%, transparent 100%)`,
-                    }}
-                  />
-                </div>
+                ))}
               </div>
             </div>
           </div>

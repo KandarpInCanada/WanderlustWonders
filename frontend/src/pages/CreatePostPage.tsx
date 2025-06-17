@@ -23,9 +23,29 @@ export default function CreatePostPage() {
   const [tags, setTags] = useState("")
   const [isDraft, setIsDraft] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const [error, setError] = useState("")
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validate required fields
+    if (!title.trim()) {
+      setError("Title is required")
+      return
+    }
+    if (!excerpt.trim()) {
+      setError("Summary is required")
+      return
+    }
+    if (!category) {
+      setError("Category is required")
+      return
+    }
+    if (!content.trim()) {
+      setError("Story content is required")
+      return
+    }
+
     const postData = {
       title,
       excerpt,
@@ -39,8 +59,40 @@ export default function CreatePostPage() {
       isDraft,
       createdAt: new Date().toISOString()
     }
-    console.log(postData)
-    alert(`Travel story ${isDraft ? 'saved as draft' : 'published'} successfully!`)
+
+    try {
+      const response = await fetch('http://localhost:3001/api/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(postData),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      alert(result.message)
+      setError("")
+      
+      // Reset form after successful submission
+      if (!isDraft) {
+        setTitle("")
+        setExcerpt("")
+        setContent("")
+        setCategory("")
+        setImage("")
+        setLocation("")
+        setDuration("")
+        setCompanions("")
+        setTags("")
+      }
+    } catch (err) {
+      console.error('Error submitting post:', err)
+      setError("Failed to submit post. Please try again.")
+    }
   }
 
   const selectedCategory = categories.find(cat => cat.value === category)
@@ -100,7 +152,7 @@ export default function CreatePostPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <Navbar/>
+      <Navbar />
       {/* Animated Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-10 left-10 w-20 h-20 bg-blue-200 rounded-full opacity-20 animate-pulse"></div>
@@ -130,6 +182,12 @@ export default function CreatePostPage() {
           </button>
         </div>
 
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-xl text-center">
+            {error}
+          </div>
+        )}
+
         {showPreview ? (
           /* Preview Mode */
           <div className="max-w-2xl mx-auto">
@@ -153,222 +211,218 @@ export default function CreatePostPage() {
             {/* Main Form */}
             <div className="lg:col-span-2">
               <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl border border-white/50 p-8 lg:p-12">
-                <div className="space-y-8">
-                  {/* Title */}
-                  <div className="group">
-                    <label htmlFor="title" className="block text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                      Story Title *
-                    </label>
-                    <input
-                      id="title"
-                      type="text"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Enter your travel story title"
-                      required
-                      className="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-300 bg-white/50 backdrop-blur group-hover:border-gray-300"
-                    />
-                  </div>
-
-                  {/* Story Details Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                      <label htmlFor="location" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-blue-500" />
-                        Location
+                <form onSubmit={handleSubmit}>
+                  <div className="space-y-8">
+                    {/* Title */}
+                    <div className="group">
+                      <label htmlFor="title" className="block text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        Story Title *
                       </label>
                       <input
-                        id="location"
+                        id="title"
                         type="text"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        placeholder="Where did you go?"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="Enter your travel story title"
+                        required
+                        className="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-300 bg-white/50 backdrop-blur group-hover:border-gray-300"
+                      />
+                    </div>
+
+                    {/* Story Details Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div>
+                        <label htmlFor="location" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-blue-500" />
+                          Location
+                        </label>
+                        <input
+                          id="location"
+                          type="text"
+                          value={location}
+                          onChange={(e) => setLocation(e.target.value)}
+                          placeholder="Where did you go?"
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all duration-300"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="duration" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-green-500" />
+                          Duration
+                        </label>
+                        <input
+                          id="duration"
+                          type="text"
+                          value={duration}
+                          onChange={(e) => setDuration(e.target.value)}
+                          placeholder="e.g., 7 days"
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-100 focus:border-green-500 transition-all duration-300"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="companions" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                          <Users className="w-4 h-4 text-purple-500" />
+                          Travel Style
+                        </label>
+                        <select
+                          id="companions"
+                          value={companions}
+                          onChange={(e) => setCompanions(e.target.value)}
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-500 transition-all duration-300"
+                        >
+                          <option value="">Select style</option>
+                          <option value="solo">Solo</option>
+                          <option value="couple">Couple</option>
+                          <option value="family">Family</option>
+                          <option value="friends">Friends</option>
+                          <option value="group">Group</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Summary */}
+                    <div className="group">
+                      <label htmlFor="excerpt" className="block text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                        Story Summary *
+                      </label>
+                      <textarea
+                        id="excerpt"
+                        value={excerpt}
+                        onChange={(e) => setExcerpt(e.target.value)}
+                        placeholder="Write a captivating summary that will make readers want to dive into your story..."
+                        required
+                        className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-100 focus:border-green-500 transition-all duration-300 resize-none bg-white/50 backdrop-blur group-hover:border-gray-300"
+                        rows={4}
+                      />
+                      <div className="text-sm text-gray-500 mt-2">
+                        {excerpt.length}/300 characters
+                      </div>
+                    </div>
+
+                    {/* Category */}
+                    <div className="group">
+                      <label htmlFor="category" className="block text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                        Category *
+                      </label>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {categories.map((cat) => (
+                          <label
+                            key={cat.value}
+                            className={`relative cursor-pointer rounded-xl p-4 border-2 transition-all duration-300 ${
+                              category === cat.value
+                                ? 'border-blue-500 bg-blue-50 shadow-lg'
+                                : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="category"
+                              value={cat.value}
+                              checked={category === cat.value}
+                              onChange={(e) => setCategory(e.target.value)}
+                              className="sr-only"
+                            />
+                            <div className="text-center">
+                              <span className="block text-sm font-semibold text-gray-900">
+                                {cat.label}
+                              </span>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Featured Image */}
+                    <div className="group">
+                      <label htmlFor="image" className="block text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                        Featured Photo URL
+                      </label>
+                      <div className="relative">
+                        <input
+                          id="image"
+                          type="url"
+                          value={image}
+                          onChange={(e) => setImage(e.target.value)}
+                          placeholder="https://example.com/your-amazing-travel-photo.jpg"
+                          className="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-100 focus:border-orange-500 transition-all duration-300 bg-white/50 backdrop-blur group-hover:border-gray-300 pr-12"
+                        />
+                        <Upload className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      </div>
+                      {image && (
+                        <div className="mt-4 rounded-xl overflow-hidden shadow-lg">
+                          <img
+                            src={image}
+                            alt="Preview"
+                            className="w-full h-48 object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              target.style.display = 'none'
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Tags */}
+                    <div className="group">
+                      <label htmlFor="tags" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                        <Tag className="w-4 h-4 text-blue-500" />
+                        Tags (comma-separated)
+                      </label>
+                      <input
+                        id="tags"
+                        type="text"
+                        value={tags}
+                        onChange={(e) => setTags(e.target.value)}
+                        placeholder="adventure, mountains, hiking, photography"
                         className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all duration-300"
                       />
                     </div>
-                    
-                    <div>
-                      <label htmlFor="duration" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-green-500" />
-                        Duration
+
+                    {/* Story Content */}
+                    <div className="group">
+                      <label htmlFor="content" className="block text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                        Your Travel Story *
                       </label>
-                      <input
-                        id="duration"
-                        type="text"
-                        value={duration}
-                        onChange={(e) => setDuration(e.target.value)}
-                        placeholder="e.g., 7 days"
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-100 focus:border-green-500 transition-all duration-300"
+                      <textarea
+                        id="content"
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        placeholder="Share your incredible journey... What did you see? Who did you meet? What challenges did you overcome? What would you do differently? Paint a picture with your words that transports readers to that moment."
+                        required
+                        className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all duration-300 resize-none bg-white/50 backdrop-blur group-hover:border-gray-300 font-mono text-sm leading-relaxed"
+                        rows={18}
                       />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="companions" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                        <Users className="w-4 h-4 text-purple-500" />
-                        Travel Style
-                      </label>
-                      <select
-                        id="companions"
-                        value={companions}
-                        onChange={(e) => setCompanions(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-500 transition-all duration-300"
-                      >
-                        <option value="">Select style</option>
-                        <option value="solo">Solo</option>
-                        <option value="couple">Couple</option>
-                        <option value="family">Family</option>
-                        <option value="friends">Friends</option>
-                        <option value="group">Group</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Summary */}
-                  <div className="group">
-                    <label htmlFor="excerpt" className="block text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                      Story Summary *
-                    </label>
-                    <textarea
-                      id="excerpt"
-                      value={excerpt}
-                      onChange={(e) => setExcerpt(e.target.value)}
-                      placeholder="Write a captivating summary that will make readers want to dive into your story..."
-                      required
-                      className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-100 focus:border-green-500 transition-all duration-300 resize-none bg-white/50 backdrop-blur group-hover:border-gray-300"
-                      rows={4}
-                    />
-                    <div className="text-sm text-gray-500 mt-2">
-                      {excerpt.length}/300 characters
-                    </div>
-                  </div>
-
-                  {/* Category */}
-                  <div className="group">
-                    <label htmlFor="category" className="block text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                      <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                      Category *
-                    </label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {categories.map((cat) => (
-                        <label
-                          key={cat.value}
-                          className={`relative cursor-pointer rounded-xl p-4 border-2 transition-all duration-300 ${
-                            category === cat.value
-                              ? 'border-blue-500 bg-blue-50 shadow-lg'
-                              : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="category"
-                            value={cat.value}
-                            checked={category === cat.value}
-                            onChange={(e) => setCategory(e.target.value)}
-                            className="sr-only"
-                          />
-                          <div className="text-center">
-                            <span className="block text-sm font-semibold text-gray-900">
-                              {cat.label}
-                            </span>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Featured Image */}
-                  <div className="group">
-                    <label htmlFor="image" className="block text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                      <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
-                      Featured Photo URL
-                    </label>
-                    <div className="relative">
-                      <input
-                        id="image"
-                        type="url"
-                        value={image}
-                        onChange={(e) => setImage(e.target.value)}
-                        placeholder="https://example.com/your-amazing-travel-photo.jpg"
-                        className="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-100 focus:border-orange-500 transition-all duration-300 bg-white/50 backdrop-blur group-hover:border-gray-300 pr-12"
-                      />
-                      <Upload className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    </div>
-                    {image && (
-                      <div className="mt-4 rounded-xl overflow-hidden shadow-lg">
-                        <img
-                          src={image}
-                          alt="Preview"
-                          className="w-full h-48 object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                          }}
-                        />
+                      <div className="text-sm text-gray-500 mt-2">
+                        {content.length} characters
                       </div>
-                    )}
-                  </div>
+                    </div>
 
-                  {/* Tags */}
-                  <div className="group">
-                    <label htmlFor="tags" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                      <Tag className="w-4 h-4 text-blue-500" />
-                      Tags (comma-separated)
-                    </label>
-                    <input
-                      id="tags"
-                      type="text"
-                      value={tags}
-                      onChange={(e) => setTags(e.target.value)}
-                      placeholder="adventure, mountains, hiking, photography"
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all duration-300"
-                    />
-                  </div>
-
-                  {/* Story Content */}
-                  <div className="group">
-                    <label htmlFor="content" className="block text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                      <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                      Your Travel Story *
-                    </label>
-                    <textarea
-                      id="content"
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                      placeholder="Share your incredible journey... What did you see? Who did you meet? What challenges did you overcome? What would you do differently? Paint a picture with your words that transports readers to that moment."
-                      required
-                      className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all duration-300 resize-none bg-white/50 backdrop-blur group-hover:border-gray-300 font-mono text-sm leading-relaxed"
-                      rows={18}
-                    />
-                    <div className="text-sm text-gray-500 mt-2">
-                      {content.length} characters
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-4 pt-8 border-t-2 border-gray-100">
+                      <button
+                        type="submit"
+                        onClick={() => setIsDraft(false)}
+                        className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 font-semibold flex items-center justify-center gap-2"
+                      >
+                        <Send className="w-5 h-5" />
+                        Publish Story
+                      </button>
+                      <button
+                        type="submit"
+                        onClick={() => setIsDraft(true)}
+                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 font-semibold flex items-center justify-center gap-2"
+                      />
                     </div>
                   </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row gap-4 pt-8 border-t-2 border-gray-100">
-                    <button
-                      type="submit"
-                      onClick={() => setIsDraft(false)}
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 font-semibold flex items-center justify-center gap-2"
-                    >
-                      <Send className="w-5 h-5" />
-                      Publish Story
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        setIsDraft(true)
-                        handleSubmit(e as any)
-                      }}
-                      className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-4 rounded-2xl transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center gap-2"
-                    >
-                      <Save className="w-5 h-5" />
-                      Save as Draft
-                    </button>
-                  </div>
-                </div>
+                </form>
               </div>
             </div>
 
@@ -438,14 +492,16 @@ export default function CreatePostPage() {
                   <h3 className="text-lg font-bold text-gray-900 mb-4">✅ Progress</h3>
                   <div className="space-y-2">
                     {[
-                      { field: 'title', label: 'Title', done: title.length > 0 },
-                      { field: 'excerpt', label: 'Summary', done: excerpt.length > 0 },
+                      { id: 'title', label: 'Title', field: 'title', done: title.length > 0 },
+                      { id: 'excerpt', label: 'Summary', field: 'description', done: excerpt.length > 0 },
                       { field: 'category', label: 'Category', done: category.length > 0 },
                       { field: 'content', label: 'Story', done: content.length > 100 },
                     ].map((item) => (
-                      <div key={item.field} className={`flex items-center gap-2 text-sm ${item.done ? 'text-green-600' : 'text-gray-400'}`}>
-                        <div className={`w-2 h-2 rounded-full ${item.done ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                        {item.label}
+                      <div key={item.id} className={`flex items-center justify-between gap-1 text-sm ${item.done ? 'text-green-600' : 'text-gray-500'}`}>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${item.done ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                          {item.label}
+                        </div>
                       </div>
                     ))}
                   </div>
