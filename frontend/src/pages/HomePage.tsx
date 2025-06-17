@@ -21,10 +21,16 @@ const easeOutQuart = (t: number): number => {
 export default function HomePage() {
   const [scrollY, setScrollY] = useState(0)
 
+  // Scroll tracking effect
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY)
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  // Scroll to top on mount (page reload or navigation)
+  useEffect(() => {
+    window.scrollTo(0, 0)
   }, [])
 
   // Enhanced day/night transition with smoother progression
@@ -89,21 +95,6 @@ export default function HomePage() {
     y: 20 + Math.sin(moonAngle) * -12,
     opacity: Math.min(0.9, moonProgress * 2), // Fades in gradually
     size: 100 + Math.sin(moonAngle) * 20,
-  }
-
-  // Enhanced bird animations with more natural movement
-  const birdFlock1 = {
-    x: 5 + ((scrollY * 0.03 + Date.now() * 0.001) % 100),
-    y: 15 + Math.sin(scrollY * 0.008 + Date.now() * 0.002) * 8,
-    opacity: Math.max(0.1, 0.7 - dayNightProgress * 0.6),
-    rotation: Math.sin(scrollY * 0.005) * 15,
-  }
-
-  const birdFlock2 = {
-    x: -10 + ((scrollY * 0.025 + Date.now() * 0.0008) % 120),
-    y: 25 + Math.sin(scrollY * 0.006 + Date.now() * 0.0015 + 1) * 6,
-    opacity: Math.max(0.05, 0.5 - dayNightProgress * 0.5),
-    rotation: Math.sin(scrollY * 0.004 + 1) * 12,
   }
 
   // Enhanced cloud movement
@@ -171,49 +162,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Enhanced Flying Birds */}
-          <div className="absolute inset-0 overflow-hidden" style={{ zIndex: 2 }}>
-            <div
-              className="absolute transition-all duration-500 ease-out"
-              style={{
-                left: `${birdFlock1.x}%`,
-                top: `${birdFlock1.y}%`,
-                opacity: birdFlock1.opacity,
-                transform: `rotate(${birdFlock1.rotation}deg)`,
-              }}
-            >
-              <svg
-                width="100"
-                height="40"
-                viewBox="0 0 100 40"
-                className="fill-none stroke-current text-gray-800 drop-shadow-sm"
-                strokeWidth="2"
-              >
-                <path d="M10,25 L18,18 M18,18 L26,22 M26,22 L34,16 M34,16 L42,20 M42,20 L50,15 M50,15 L58,19 M58,19 L66,14 M66,14 L74,18 M74,18 L82,13 M82,13 L90,17" />
-              </svg>
-            </div>
-            <div
-              className="absolute transition-all duration-500 ease-out"
-              style={{
-                left: `${birdFlock2.x}%`,
-                top: `${birdFlock2.y}%`,
-                opacity: birdFlock2.opacity,
-                transform: `rotate(${birdFlock2.rotation}deg)`,
-              }}
-            >
-              <svg
-                width="70"
-                height="30"
-                viewBox="0 0 70 30"
-                className="fill-none stroke-current text-gray-700 drop-shadow-sm"
-                strokeWidth="1.5"
-              >
-                <path d="M15,18 L22,14 M22,14 L29,17 M29,17 L36,13 M36,13 L43,16 M43,16 L50,12 M50,12 L57,15" />
-              </svg>
-            </div>
-          </div>
-
-          {/* Enhanced Stars with Twinkling Effect */}
+          {/* Enhanced Stars with Star Shape */}
           <div
             className="absolute inset-0 transition-opacity duration-1000"
             style={{ opacity: Math.max(0, (dayNightProgress - 0.4) * 1.5) }}
@@ -221,7 +170,7 @@ export default function HomePage() {
             {[...Array(20)].map((_, i) => (
               <div
                 key={i}
-                className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
+                className="absolute transition-all duration-1000"
                 style={{
                   left: `${10 + ((i * 37) % 80)}%`,
                   top: `${15 + ((i * 23) % 40)}%`,
@@ -229,7 +178,16 @@ export default function HomePage() {
                   animationDuration: `${2 + (i % 3)}s`,
                   opacity: 0.6 + (i % 3) * 0.2,
                 }}
-              />
+              >
+                <svg
+                  width="8"
+                  height="8"
+                  viewBox="0 0 8 8"
+                  className="fill-current text-white animate-pulse"
+                >
+                  <path d="M4,0 L5,3 L8,4 L5,5 L4,8 L3,5 L0,4 L3,3 Z" />
+                </svg>
+              </div>
             ))}
           </div>
 
@@ -828,14 +786,14 @@ export default function HomePage() {
               Discover amazing destinations, travel tips, and inspiring stories from fellow adventurers around the globe
             </p>
             <div className="relative max-w-2xl mx-auto">
-                  <Link to="/all-blogs">
-                    <button
-                      className="w-full px-6 py-4 text-lg bg-white/95 backdrop-blur-sm border-0 rounded-2xl shadow-xl hover:bg-white/80 focus:outline-none focus:ring-4 focus:ring-white/30 transition-all duration-300"
-                    >
-                      Explore Now
-                    </button>
-                  </Link>
-                </div>
+              <Link to="/all-blogs">
+                <button
+                  className="w-full px-6 py-4 text-lg bg-white/95 backdrop-blur-sm border-0 rounded-2xl shadow-xl hover:bg-white/80 focus:outline-none focus:ring-4 focus:ring-white/30 transition-all duration-300"
+                >
+                  Explore Now
+                </button>
+              </Link>
+            </div>
           </div>
         </div>
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce z-20">
