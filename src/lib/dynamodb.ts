@@ -3,12 +3,13 @@ import { DynamoDBDocumentClient, PutCommand, GetCommand, ScanCommand, UpdateComm
 import type { CreateUserData, UserProfile } from "@/types/story"
 import { config } from "./config"
 
+// Create DynamoDB client using IAM roles (no explicit credentials)
 const client = new DynamoDBClient({
   region: config.aws.region,
-  credentials: {
-    accessKeyId: config.aws.accessKeyId,
-    secretAccessKey: config.aws.secretAccessKey,
-  },
+  // Remove explicit credentials - the SDK will automatically use:
+  // 1. IAM roles when running on ECS
+  // 2. Environment variables in development
+  // 3. AWS credentials file locally
 })
 
 export const dynamodb = DynamoDBDocumentClient.from(client)

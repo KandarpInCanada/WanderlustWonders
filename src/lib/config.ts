@@ -7,8 +7,7 @@ export const config = {
   },
   aws: {
     region: process.env.NEXT_PUBLIC_AWS_REGION || "us-east-1",
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+    // Remove access key and secret key - use IAM roles instead
   },
   dynamodb: {
     userTable: process.env.DYNAMODB_USER_TABLE || "UserDetails",
@@ -26,8 +25,7 @@ export function validateConfig() {
   const requiredVars = [
     "NEXT_PUBLIC_SUPABASE_URL",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    "AWS_ACCESS_KEY_ID",
-    "AWS_SECRET_ACCESS_KEY",
+    // Remove AWS credentials from required vars since we're using IAM roles
   ]
 
   const missing = requiredVars.filter((varName) => !process.env[varName])

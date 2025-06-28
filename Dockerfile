@@ -30,6 +30,9 @@ ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_AWS_REGION=$NEXT_PUBLIC_AWS_REGION
 ENV NEXT_PUBLIC_AWS_BUCKET_NAME=$NEXT_PUBLIC_AWS_BUCKET_NAME
 
+# Note: AWS credentials are not needed as environment variables
+# The application will use IAM roles when running on ECS
+
 # Expose port
 EXPOSE 3000
 
