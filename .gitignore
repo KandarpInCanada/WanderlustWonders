@@ -5,3 +5,4 @@ frontend/.DS_Store
 frontend/.DS_Store
 terraform/terraform.tfvars
 terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
