@@ -1,2 +1,7 @@
 frontend/.DS_Store
 /backend/node_modules
+/node_modules
+/terraform/.terraform
+frontend/.DS_Store
+terraform/terraform.tfvars
+terraform/terraform.tfstate
