@@ -1,44 +1,24 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerSupabaseClient } from "@/lib/supabase-server"
-import { s3Operations } from "@/lib/s3"
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
-    const supabase = createServerSupabaseClient()
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
+    console.log("📤 Mock file upload endpoint called")
 
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    // Mock successful upload response
+    const mockImageUrl = `/placeholder.svg?height=600&width=800&text=Uploaded+Image`
 
-    const { fileName, contentType } = await request.json()
+    console.log("✅ Mock upload successful:", mockImageUrl)
 
-    if (!fileName || !contentType) {
-      return NextResponse.json({ error: "fileName and contentType are required" }, { status: 400 })
-    }
-
-    // Validate file type
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"]
-    if (!allowedTypes.includes(contentType)) {
-      return NextResponse.json({ error: "Invalid file type. Only images are allowed." }, { status: 400 })
-    }
-
-    // Generate unique key
-    const timestamp = Date.now()
-    const randomString = Math.random().toString(36).substring(2, 15)
-    const fileExtension = fileName.split(".").pop()
-    const key = `travel-stories/${user.id}/${timestamp}-${randomString}.${fileExtension}`
-
-    // Generate presigned URL
-    const result = await s3Operations.getPresignedUploadUrl(key, contentType)
-
-    return NextResponse.json(result)
+    return NextResponse.json(
+      {
+        success: true,
+        imageUrl: mockImageUrl,
+        message: "File uploaded successfully (mocked)",
+      },
+      { status: 200 },
+    )
   } catch (error) {
-    console.error("Error generating upload URL:", error)
-    return NextResponse.json({ error: "Failed to generate upload URL" }, { status: 500 })
+    console.error("❌ Mock upload error:", error)
+    return NextResponse.json({ error: "Upload failed" }, { status: 500 })
   }
 }

@@ -1,18 +1,20 @@
 import { NextResponse } from "next/server"
-import { postOperations } from "@/lib/dynamodb"
+import { postOperations } from "@/lib/in-memory-storage"
 
 export async function GET() {
   try {
-    const posts = await postOperations.getAllPosts()
+    console.log("📊 Calculating story statistics from in-memory storage...")
 
-    const totalStories = posts.length
-    const totalLikes = posts.reduce((sum, post) => sum + (post.likes || 0), 0)
+    const stories = await postOperations.getAllPosts()
 
-    // Count tags
-    const tagCounts: { [key: string]: number } = {}
-    posts.forEach((post) => {
-      if (post.tags && Array.isArray(post.tags)) {
-        post.tags.forEach((tag: string) => {
+    // Calculate total likes
+    const totalLikes = stories.reduce((sum, story) => sum + (story.likes || 0), 0)
+
+    // Calculate popular tags
+    const tagCounts: Record<string, number> = {}
+    stories.forEach((story) => {
+      if (Array.isArray(story.tags)) {
+        story.tags.forEach((tag) => {
           tagCounts[tag] = (tagCounts[tag] || 0) + 1
         })
       }
@@ -21,17 +23,24 @@ export async function GET() {
     const popularTags = Object.entries(tagCounts)
       .map(([tag, count]) => ({ tag, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 5)
+      .slice(0, 10)
 
     const stats = {
-      totalStories,
+      totalStories: stories.length,
       totalLikes,
       popularTags,
     }
 
-    return NextResponse.json(stats)
+    console.log("✅ Successfully calculated stats:", stats)
+
+    return NextResponse.json(stats, {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+      },
+    })
   } catch (error) {
-    console.error("Error fetching story stats:", error)
-    return NextResponse.json({ error: "Failed to fetch stats" }, { status: 500 })
+    console.error("❌ Error calculating stats:", error)
+    return NextResponse.json({ error: "Failed to calculate statistics" }, { status: 500 })
   }
 }

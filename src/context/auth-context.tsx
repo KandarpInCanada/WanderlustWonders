@@ -1,19 +1,21 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useEffect, useState, useCallback } from "react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import type { User } from "@supabase/auth-helpers-nextjs"
-import { config } from "@/lib/config"
+import { createContext, useContext, useState, useEffect } from "react"
+
+interface User {
+  id: string
+  email: string
+  name: string
+  avatar?: string
+}
 
 interface AuthContextType {
   user: User | null
   loading: boolean
-  signInWithGoogle: () => Promise<void>
+  signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
-  profileUrl: string | null
-  error: string | null
-  clearError: () => void
+  signUp: (email: string, password: string, name: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -21,97 +23,33 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const supabase = createClientComponentClient()
-
-  const clearError = useCallback(() => {
-    setError(null)
-  }, [])
 
   useEffect(() => {
-    const getUser = async () => {
-      try {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser()
-
-        if (userError) {
-          console.error("Error getting user:", userError)
-          setError("Failed to get user information")
-        } else {
-          setUser(user)
-        }
-      } catch (err) {
-        console.error("Unexpected error getting user:", err)
-        setError("An unexpected error occurred")
-      } finally {
-        setLoading(false)
-      }
+    // Mock authentication - set a default user for demo
+    const mockUser: User = {
+      id: "user_1",
+      email: "demo@example.com",
+      name: "Demo User",
+      avatar: "/placeholder.svg?height=150&width=150",
     }
 
-    getUser()
+    setUser(mockUser)
+    setLoading(false)
+  }, [])
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      try {
-        setUser(session?.user ?? null)
-        setError(null)
-
-        if (event === "SIGNED_IN" && session?.user) {
-          console.log("User signed in:", session.user.id)
-        } else if (event === "SIGNED_OUT") {
-          console.log("User signed out")
-        }
-      } catch (err) {
-        console.error("Error in auth state change:", err)
-        setError("Authentication state error")
-      } finally {
-        setLoading(false)
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [supabase.auth])
-
-  const signInWithGoogle = async () => {
+  const signIn = async (email: string, password: string) => {
+    setLoading(true)
     try {
-      setLoading(true)
-      setError(null)
-
-      const { error: signInError } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${config.app.url}/auth/callback`,
-          queryParams: {
-            access_type: "offline",
-            prompt: "consent",
-          },
-        },
-      })
-
-      if (signInError) {
-        console.error("Error signing in with Google:", signInError)
-
-        // Handle specific error types
-        switch (signInError.message) {
-          case "popup_blocked":
-            setError("Popup was blocked. Please allow popups and try again.")
-            break
-          case "access_denied":
-            setError("Access was denied. Please try again.")
-            break
-          default:
-            setError("Failed to sign in with Google. Please try again.")
-        }
-        throw signInError
+      // Mock sign in
+      const mockUser: User = {
+        id: "user_1",
+        email,
+        name: "Demo User",
+        avatar: "/placeholder.svg?height=150&width=150",
       }
+      setUser(mockUser)
     } catch (error) {
-      console.error("Unexpected error during Google sign in:", error)
-      if (!error || typeof error !== "object" || !("message" in error)) {
-        setError("An unexpected error occurred during sign in")
-      }
+      console.error("Sign in error:", error)
       throw error
     } finally {
       setLoading(false)
@@ -119,38 +57,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
+    setLoading(true)
     try {
-      setLoading(true)
-      setError(null)
-
-      const { error: signOutError } = await supabase.auth.signOut()
-
-      if (signOutError) {
-        console.error("Error signing out:", signOutError)
-        setError("Failed to sign out. Please try again.")
-        throw signOutError
-      }
-
       setUser(null)
     } catch (error) {
-      console.error("Unexpected error during sign out:", error)
-      setError("An unexpected error occurred during sign out")
+      console.error("Sign out error:", error)
       throw error
     } finally {
       setLoading(false)
     }
   }
 
-  const profileUrl = user?.user_metadata?.avatar_url || null
+  const signUp = async (email: string, password: string, name: string) => {
+    setLoading(true)
+    try {
+      // Mock sign up
+      const mockUser: User = {
+        id: `user_${Date.now()}`,
+        email,
+        name,
+        avatar: "/placeholder.svg?height=150&width=150",
+      }
+      setUser(mockUser)
+    } catch (error) {
+      console.error("Sign up error:", error)
+      throw error
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const value = {
     user,
     loading,
-    signInWithGoogle,
+    signIn,
     signOut,
-    profileUrl,
-    error,
-    clearError,
+    signUp,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -1,8 +1,8 @@
 "use client"
 
 import { Suspense } from "react"
-import Dashboard from "@/components/dashboard/dashboard"
 import Navbar from "@/components/dashboard/navbar"
+import TravelStoriesOverview from "@/components/dashboard/travel-stories-overview"
 
 export default function HomePage() {
   return (
@@ -29,7 +29,7 @@ export default function HomePage() {
                 </div>
               }
             >
-              <Dashboard />
+              <TravelStoriesOverview />
             </Suspense>
           </main>
         </div>
